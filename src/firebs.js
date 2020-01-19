@@ -1,14 +1,14 @@
 import firebase from 'firebase'
 // change lines below with your own Firebase snippets!
 var config = {
-    apiKey: "AIzaSyAvhh5CAlJkYGi1rYf_YxyYDdKEfCrLQiU",
-    authDomain: "smart-retail-6d0a3.firebaseapp.com",
-    databaseURL: "https://smart-retail-6d0a3.firebaseio.com",
-    projectId: "smart-retail-6d0a3",
-    storageBucket: "smart-retail-6d0a3.appspot.com",
-    messagingSenderId: "693627086911",
-    appId: "1:693627086911:web:84749e8c21631c2dfa708a",
-    measurementId: "G-B5YWPXTQQN"
+    apiKey: "AIzaSyB420EdjFz5tQB1O0o-HeXa-NVaKnO3KU0",
+    authDomain: "smart-cart-13d99.firebaseapp.com",
+    databaseURL: "https://smart-cart-13d99.firebaseio.com",
+    projectId: "smart-cart-13d99",
+    storageBucket: "smart-cart-13d99.appspot.com",
+    messagingSenderId: "671543951350",
+    appId: "1:671543951350:web:172a17b036a8a87c4351d7",
+    measurementId: "G-1PSYSDYHB5"
 };
 const fire = firebase.initializeApp(config);
 export default fire;

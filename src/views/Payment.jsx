@@ -17,7 +17,8 @@ import {
     Form,
     Modal, ModalHeader, ModalBody, ModalFooter, Container
 } from "reactstrap";
-import fire from "fire.js";
+import CurrencyFormat from 'react-currency-format';
+import fire from "firebs.js";
 // core components
 
 class Dashboard extends React.Component {
@@ -33,10 +34,38 @@ class Dashboard extends React.Component {
             detail_item: [],
             total_price: 0,
 
-            moneyChange:''
+            moneyChange:'',
         }
     }
 
+    setCart = () => {
+        const db = fire.firestore();
+        let qty, total
+
+        db.collection('list_item').doc('01').collection('item').get()
+            .then(snapshot => {
+                snapshot.forEach(doc => {
+                    db.collection('product').where('name', '==', doc.data().name).get()
+                        .then(snapshot => {
+                            snapshot.forEach(doc2 => {
+                                qty = 1
+                                total = qty * doc2.data().price
+                                db.collection('cart').doc('01').collection('item').doc(doc2.data().name).set({
+                                    name: doc2.data().name,
+                                    qty: qty,
+                                    total: total
+                                })
+                            });
+                            // db.collection('cart').doc('01').update({
+                            //     total_item: total_item
+                            // })
+                        })
+                });
+            })
+            .catch(error => {
+                console.log('Error!', error);
+            })
+    }
     // Cart
     getData = () => {
         const db = fire.firestore();
@@ -95,12 +124,11 @@ class Dashboard extends React.Component {
             activeCart: i,
             total_price: x
         })
-        this.detailItem()
     }
     
     moneyReceived(e) {
         this.setState({
-            moneyChange: e.target.value
+            moneyChange: e.value
         })
     }
 
@@ -109,16 +137,23 @@ class Dashboard extends React.Component {
             modalCash: !this.state.modalCash,
             modalDetail: !this.state.modalDetail
         })
-        swal("Success!", "Your Change : "+( this.state.moneyChange - this.state.total_price), "success");
+        let recieved = this.state.moneyChange - this.state.total_price
+        swal("Success!", "Your Change : "+( recieved), "success");
+    }
+
+    componentDidMount(){
+        // get data from firestore
+        this.getData()
     }
 
     render() {
+        // get detail item
+        this.detailItem()
+        this.setCart()
 
-        // get data from firestore
-        this.getData()
-
+        let totalPrice = 0
         let listDetailItem = this.state.detail_item.map((val, i) => {
-            
+            totalPrice = totalPrice + val.total
             i = i + 1
             return (
                 <>
@@ -126,11 +161,12 @@ class Dashboard extends React.Component {
                         <td>{i}</td>
                         <td>{val.name}</td>
                         <td>{val.qty}</td>
-                        <td><ConvertToRupiah number={val.total} /></td>
+                        <td><CurrencyFormat value={val.total} displayType={'text'} thousandSeparator={true}/></td>
                     </tr>
                 </>
             )
         })
+        
         let listCart = this.state.cart.map((val, i) => {
             let total = val.total_item
             let status = val.status
@@ -167,7 +203,7 @@ class Dashboard extends React.Component {
                             <CardFooter>
                                 <hr />
                                 <div className="stats">
-                                    <i className="fas fa-coins" /> {"Rp. "} <ConvertToRupiah number={total}/>
+                                    <i className="fas fa-coins" /> <CurrencyFormat value={total} displayType={'text'} thousandSeparator={true} prefix={'RP. '} />
                                 </div>
                             </CardFooter>
                         </Card>
@@ -183,10 +219,13 @@ class Dashboard extends React.Component {
                     <ModalBody>
                         <FormGroup>
                             <label>money received</label>
-                            <Input
-                                onChange={this.moneyReceived.bind(this)}
+                            <CurrencyFormat 
+                                className="form-control"
+                                thousandSeparator={true} prefix={'Rp. '} 
+                                onValueChange={this.moneyReceived.bind(this)}
                                 placeholder=""
-                                type="text"/>
+                                type="text"
+                                />
                         </FormGroup>
                     </ModalBody>
                     <ModalFooter>
@@ -224,7 +263,7 @@ class Dashboard extends React.Component {
                         </Container>    
                     </ModalBody>
                     <ModalFooter>
-                        <Button color="primary" onClick={this.showModalCash}>Rp. <ConvertToRupiah number={this.state.total_price} /></Button>
+                        <Button color="primary" onClick={this.showModalCash}><CurrencyFormat value={totalPrice} displayType={'text'} thousandSeparator={true} prefix={'Rp. '} /></Button>
                         <Button color="secondary" onClick={this.showModal}>Cancel</Button>
                     </ModalFooter>
                 </Modal>
@@ -236,46 +275,6 @@ class Dashboard extends React.Component {
             </>
         );
     }
-}
-
-let ConvertToRupiah = (props) => {
-    let number = props.number
-    if (number) {
-
-        var rupiah = "";
-
-        var numberrev = number
-
-            .toString()
-
-            .split("")
-
-            .reverse()
-
-            .join("");
-
-        for (var i = 0; i < numberrev.length; i++)
-
-            if (i % 3 == 0) rupiah += numberrev.substr(i, 3) + ".";
-
-        return (
-
-            rupiah
-
-                .split("", rupiah.length - 1)
-
-                .reverse()
-
-                .join("")
-
-        );
-
-    } else {
-
-        return number;
-
-    }
-
 }
 
 export default Dashboard;
