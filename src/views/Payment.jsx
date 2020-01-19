@@ -56,9 +56,6 @@ class Dashboard extends React.Component {
                                     total: total
                                 })
                             });
-                            // db.collection('cart').doc('01').update({
-                            //     total_item: total_item
-                            // })
                         })
                 });
             })
@@ -137,7 +134,7 @@ class Dashboard extends React.Component {
             modalCash: !this.state.modalCash,
             modalDetail: !this.state.modalDetail
         })
-        let recieved = this.state.moneyChange - this.state.total_price
+        let recieved = this.state.moneyChange - this.total_price
         swal("Success!", "Your Change : "+( recieved), "success");
     }
 
@@ -154,6 +151,7 @@ class Dashboard extends React.Component {
         let totalPrice = 0
         let listDetailItem = this.state.detail_item.map((val, i) => {
             totalPrice = totalPrice + val.total
+
             i = i + 1
             return (
                 <>
@@ -226,6 +224,8 @@ class Dashboard extends React.Component {
                                 placeholder=""
                                 type="text"
                                 />
+                            <Input
+                            />
                         </FormGroup>
                     </ModalBody>
                     <ModalFooter>
