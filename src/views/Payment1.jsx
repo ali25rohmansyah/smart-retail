@@ -21,23 +21,52 @@ import CurrencyFormat from 'react-currency-format';
 import fire from "firebs.js";
 // core components
 
-class Pay extends React.Component {
+class Dashboard extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            // Modal
             modalDetail: false,
             modalCash: false,
-
             cart: [],
-            item:[],
-            detailItem:[],
+            activeCart: '00',
 
+            // detail items
+            detail_item: [],
+            total_price: 0,
+            price:[],
+
+            moneyChange:'',
         }
     }
 
-    // Get cart from firestore
-    getCart = () => {
+    // setCart = () => {
+    //     const db = fire.firestore();
+    //     let qty, total
+
+    //     db.collection('list_item').doc('01').collection('item').get()
+    //         .then(snapshot => {
+    //             snapshot.forEach(doc => {
+    //                 db.collection('product').where('name', '==', doc.data().name).get()
+    //                     .then(snapshot => {
+    //                         snapshot.forEach(doc2 => {
+    //                             qty = 1
+    //                             total = qty * doc2.data().price
+    //                             db.collection('cart').doc('01').collection('item').doc(doc2.data().name).set({
+    //                                 name: doc2.data().name,
+    //                                 qty: qty,
+    //                                 total: total
+    //                             })
+    //                         });
+    //                     })
+    //             });
+    //         })
+    //         .catch(error => {
+    //             console.log('Error!', error);
+    //         })
+    // }
+
+    // Cart
+    getData = () => {
         const db = fire.firestore();
         let getCart = []
         let id
@@ -57,13 +86,15 @@ class Pay extends React.Component {
             })
     }
 
-    // get detailItem from firestore
-    getDetailItem = () =>{
+    // detail item
+    detailItem = ()=> {
         const db = fire.firestore();
 
+        let getItem = []
         db.collection('cart').doc('01').get()
             .then(snapshot => {
-                this.setState({ item: snapshot.data().item })
+
+                this.setState({ detail_item: snapshot.data().item })
                 this.x()
             })
             .catch(error => {
@@ -75,12 +106,12 @@ class Pay extends React.Component {
         const db = fire.firestore();
 
         let y =[]
-        this.state.item.map((val, i) => {
+        this.state.detail_item.map((val, i) => {
             db.collection('product').where('name', '==', val.name).get().then(snapshot => {
                 snapshot.forEach(doc => {
                     y.push({...{'name' : val.name}, ...{'qty' : val.qty}, ...{'price' : doc.data().price}})
                 });
-                this.setState({ detailItem: y })
+                this.setState({ price: y })
             })     
         })
     }
@@ -90,29 +121,74 @@ class Pay extends React.Component {
         modalCash: false,
         })
     )
+    
 
-    modalDetail = () => this.setState(state => ({
-        modalDetail: !state.modalDetail,
-        modalCash: false,
+    showModalCash = () => this.setState(state => ({
+        modalCash: !state.modalCash
+    }))
+
+    cancelModalCash = () => this.setState(state => ({
+        modalCash: false
+    }))  
+    
+    setActiveCart(i, x) {
+        this.setState({
+            activeCart: i,
+            total_price: x
         })
-    )
+    }
+    
+    moneyReceived(e) {
+        this.setState({
+            moneyChange: e.value
+        })
+    }
+
+    submitForm = () => {
+        this.setState({
+            modalCash: !this.state.modalCash,
+            modalDetail: !this.state.modalDetail
+        })
+        let recieved = this.state.moneyChange - this.total_price
+        swal("Success!", "Your Change : "+( recieved), "success");
+    }
 
     componentDidMount(){
-        this.getCart()
+        // get data from firestore
+        this.getData()
     }
+
     render() {
+        // get detail item
+        this.detailItem()
+        // this.setCart()
 
-        this.getDetailItem()
+        let totalPrice = 0
+        let listDetailItem = this.state.price.map((val, i) => {
+            // totalPrice = totalPrice + val.total
 
-        // Get List Cart
-        let listCart = this.state.cart.map((val, i) => {
-            let total = val.total_item
-            let status = val.status
             i = i + 1
             return (
                 <>
-                    <Col key={i} lg="3" md="6" sm="6">
-                        <Card className="card-stats"  onClick={ this.modalDetail}>
+                    <tr key={i}>
+                        <td>{i}</td>
+                        <td>{val.name}</td>
+                        <td>{val.qty}</td>
+                        <td><CurrencyFormat value={val.price} displayType={'text'} thousandSeparator={true}/></td>
+                    </tr>
+                </>
+            )
+        })
+        
+        let listCart = this.state.cart.map((val, i) => {
+            let total = val.total_item
+            let status = val.status
+            let id =  val.id
+            i = i + 1
+            return (
+                <>
+                    <Col key={i} lg="3" md="6" sm="6" onClick={() => { this.setActiveCart(id, total) }}>
+                        <Card className="card-stats" onClick={status ? this.showModal : ''}>
                             <CardBody>
                                 <Row>
                                     <Col md="4" xs="5">
@@ -148,24 +224,31 @@ class Pay extends React.Component {
                 </>
                 )
             })
-        
-        // Get List DetailItem
-        let listDetailItem = this.state.detailItem.map((val, i) => {
-            let totalPrice = val.qty + val.price
-            return (
-                <>
-                    <tr key={i}>
-                        <td>{i+1}</td>
-                        <td>{val.name}</td>
-                        <td>{val.qty}</td>
-                        <td><CurrencyFormat value={totalPrice} displayType={'text'} thousandSeparator={true}/></td>
-                    </tr>
-                </>
-            )
-        })
-
         return (
             <>
+                {/* Modal Cash */}
+                <Modal isOpen={this.state.modalCash} scrollable={true} centered={true} size={'sm'}>
+                    <ModalHeader>Cash</ModalHeader>
+                    <ModalBody>
+                        <FormGroup>
+                            <label>money received</label>
+                            <CurrencyFormat 
+                                className="form-control"
+                                thousandSeparator={true} prefix={'Rp. '} 
+                                onValueChange={this.moneyReceived.bind(this)}
+                                placeholder=""
+                                type="text"
+                                />
+                            <Input
+                            />
+                        </FormGroup>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button color="primary" onClick={this.submitForm}>ok</Button>
+                        <Button color="secondary" onClick={this.cancelModalCash}>Cancel</Button>
+                    </ModalFooter>
+                </Modal>
+
                 {/* Modal Detail Payment */}
                 <Modal isOpen={this.state.modalDetail} toggle={this.showModal} scrollable={true} centered={true} size={'xl'}>
                     <ModalHeader>Detail Payment Transaction {this.state.activeCart}</ModalHeader>
@@ -195,19 +278,18 @@ class Pay extends React.Component {
                         </Container>    
                     </ModalBody>
                     <ModalFooter>
-                        {/* <Button color="primary" onClick={this.showModalCash}><CurrencyFormat value={totalPrice} displayType={'text'} thousandSeparator={true} prefix={'Rp. '} /></Button> */}
+                        <Button color="primary" onClick={this.showModalCash}><CurrencyFormat value={totalPrice} displayType={'text'} thousandSeparator={true} prefix={'Rp. '} /></Button>
                         <Button color="secondary" onClick={this.showModal}>Cancel</Button>
                     </ModalFooter>
                 </Modal>
-
-                <div className="content">
-                    <Row>
-                        {listCart}  
-                    </Row>
-                </div>
+            <div className="content">
+                <Row>
+                {listCart}  
+                </Row>
+            </div>
             </>
-        )
+        );
     }
 }
 
-export default Pay;
+export default Dashboard;
